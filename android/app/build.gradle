@@ -1,0 +1,164 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(TicTacToeApp());
+}
+
+class TicTacToeApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Tic Tac Toe',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: GameScreen(),
+    );
+  }
+}
+
+class GameScreen extends StatefulWidget {
+  @override
+  _GameScreenState createState() => _GameScreenState();
+}
+
+class _GameScreenState extends State<GameScreen> {
+  int gridSize = 3; // Default grid size
+  List<List<String?>> board = [];
+  String currentPlayer = 'X';
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeBoard();
+  }
+
+  void _initializeBoard() {
+    board = List.generate(gridSize, (_) => List.filled(gridSize, null));
+  }
+
+  bool _checkWinner(String player) {
+    // Check rows
+    for (int i = 0; i < gridSize; i++) {
+      if (board[i].every((cell) => cell == player)) return true;
+    }
+
+    // Check columns
+    for (int i = 0; i < gridSize; i++) {
+      if (List.generate(gridSize, (index) => board[index][i]).every((cell) => cell == player)) return true;
+    }
+
+    // Check diagonals
+    if (List.generate(gridSize, (index) => board[index][index]).every((cell) => cell == player)) return true;
+    if (List.generate(gridSize, (index) => board[index][gridSize - index - 1]).every((cell) => cell == player)) return true;
+
+    return false;
+  }
+
+  bool _isBoardFull() {
+    return board.every((row) => row.every((cell) => cell != null));
+  }
+
+  void _handleTap(int row, int col) {
+    if (board[row][col] == null) {
+      setState(() {
+        board[row][col] = currentPlayer;
+        if (_checkWinner(currentPlayer)) {
+          _showGameEndDialog('$currentPlayer Wins!');
+        } else if (_isBoardFull()) {
+          _showGameEndDialog('It's a Draw!');
+        } else {
+          currentPlayer = currentPlayer == 'X' ? 'O' : 'X';
+        }
+      });
+    }
+  }
+
+  void _showGameEndDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Game Over'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                _initializeBoard();
+                currentPlayer = 'X';
+              });
+            },
+            child: Text('Play Again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Tic Tac Toe'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: Text('Set Grid Size'),
+                  content: TextField(
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(hintText: 'Enter grid size (e.g., 3)'),
+                    onSubmitted: (value) {
+                      int? newSize = int.tryParse(value);
+                      if (newSize != null && newSize > 2) {
+                        setState(() {
+                          gridSize = newSize;
+                          _initializeBoard();
+                        });
+                        Navigator.of(context).pop();
+                      }
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: gridSize,
+              ),
+              itemCount: gridSize * gridSize,
+              itemBuilder: (context, index) {
+                int row = index ~/ gridSize;
+                int col = index % gridSize;
+                return GestureDetector(
+                  onTap: () => _handleTap(row, col),
+                  child: Container(
+                    margin: EdgeInsets.all(4.0),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      border: Border.all(color: Colors.black),
+                    ),
+                    child: Center(
+                      child: Text(
+                        board[row][col] ?? '',
+                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
